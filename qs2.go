@@ -112,7 +112,7 @@ func utilizationBar (q *Quota) {
 
     maxwidth := w/4
     if q.bytes == -1 || q.bsoft == -1 || q.bhard == -1 {
-        msg:="No quota information! Please contact user-support@opensciencegrid.org"
+        msg:="No quota information! Contact user-support@opensciencegrid.org"
         fmt.Printf("[ %s", msg)
         for i := 1; i <= (maxwidth - len(msg)); i++ {
           fmt.Printf(" ")
