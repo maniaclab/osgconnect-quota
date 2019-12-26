@@ -1,8 +1,9 @@
 # Building
-
+```
 go get github.com/pkg/xattr
 go get golang.org/x/crypto/ssh/terminal
 go build 
+```
 
 # usage
 ```
