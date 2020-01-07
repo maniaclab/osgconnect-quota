@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/pkg/xattr"
 	"golang.org/x/crypto/ssh/terminal"
@@ -144,12 +145,26 @@ func utilizationBar(q *Quota) {
 func main() {
 	username := os.Getenv("USER")
 
-	cq := cephQuota(username, "/public")
-	xq := xfsQuota(username, "/home")
+	cephPathPtr := flag.String("c", "", "Path for CephFS filesystem NOT including username")
+	pathPtr := flag.String("n", "", "Path for XFS or NFS filesystem NOT including username")
+	flag.Parse()
 
+	if (*cephPathPtr == "") && (*pathPtr == "") {
+		fmt.Println("Usage: ")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 	fmt.Printf("Disk utilization for %s:\n", username)
-	fmt.Printf("/home:   ")
-	utilizationBar(&xq)
-	fmt.Printf("/public: ")
-	utilizationBar(&cq)
+	if *cephPathPtr != "" {
+		cq := cephQuota(username, *cephPathPtr)
+
+		fmt.Printf("%-10s: ", *cephPathPtr)
+		utilizationBar(&cq)
+	}
+	if *pathPtr != "" {
+		xq := xfsQuota(username, *pathPtr)
+
+		fmt.Printf("%-10s: ", *pathPtr)
+		utilizationBar(&xq)
+	}
 }
