@@ -66,15 +66,17 @@ func cephQuota(name string, path string) Quota {
 
 func xfsQuota(name string, path string) Quota {
 	var q Quota
-	var err error
+	//var err error
 
 	// just shell out. it'll be fine (tm)
-	out, err := exec.Command("/bin/quota", "-w", "--hide-device", "-p", "-f", path).Output()
-	if err != nil {
-		// we'll set the output to be empty, so the next test will fail
-		// and we handle the errors later
-		out = []byte{}
-	}
+	out, _ := exec.Command("/bin/quota", "-w", "--hide-device", "-p", "-f", path).Output()
+	// this essentially cannot work because of how quota(1) behaves. exit
+	// reasons are conflated and compressed into exit 1
+	//if err != nil {
+	//	// we'll set the output to be empty, so the next test will fail
+	//	// and we handle the errors later
+	//	out = []byte{}
+	//}
 
 	// nope doesnt seem brittle at all
 	s := strings.Split(string(out), "\n")
@@ -88,14 +90,14 @@ func xfsQuota(name string, path string) Quota {
 
 	// sf = [blocks,bsoft,bhard,bgrace,files,fsoft,fhard,fgrace]
 	// quota reports in 1K blocks for historical reasons
-	kbytes, _ := strconv.Atoi(sf[0])
+	kbytes, _ := strconv.Atoi(strings.Trim(sf[0], "*"))
 	kbsoft, _ := strconv.Atoi(sf[1])
 	kbhard, _ := strconv.Atoi(sf[2])
 	q.bytes = kbytes * 1024
 	q.bsoft = kbsoft * 1024
 	q.bhard = kbhard * 1024
 
-	q.files, _ = strconv.Atoi(sf[4])
+	q.files, _ = strconv.Atoi(strings.Trim(sf[4], "*"))
 	q.fsoft, _ = strconv.Atoi(sf[5])
 	q.fhard, _ = strconv.Atoi(sf[6])
 
