@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"regexp"
 )
 
 type Quota struct {
@@ -105,6 +106,52 @@ func xfsQuota(name string, path string) Quota {
 
 }
 
+func extQuota(name string, path string) Quota{
+	var q Quota 
+	out, _ := exec.Command("quota", "-v").Output()
+	newpath := strings.Replace(path, "/", "\\/", -1)
+	re := regexp.MustCompile( newpath + "\\s+([0-9]+\\s*){6}")
+    sfs := re.FindString(string(out))	
+	sf := strings.Fields(sfs) 
+	if len(sf) < 7 {
+        // user probably doesn't have a quota. set everything to -1 and
+        // we'll deal with it later
+        q = Quota{-1, -1, -1, -1, -1, -1}
+        return q
+    }
+	var nolimits bool = false
+	sf3,_ := strconv.Atoi(sf[3])
+	sf2,_ := strconv.Atoi(sf[2])
+	sf5,_ := strconv.Atoi(sf[5])
+	sf6,_ := strconv.Atoi(sf[6])
+	if (sf3 == 0 || sf2  == 0)  {
+		sf1, _ := strconv.Atoi(sf[1])
+		fmt.Printf("No size quota, current usage: %dM\n" , sf1*1024/1000/1000)
+		nolimits = true
+	}	
+	if (sf5 == 0 || sf6 == 0){
+		sf4, _ := strconv.Atoi(sf[4]) 
+		fmt.Printf("No file quota, current usage: %d\n" , sf4)
+		nolimits = true
+	}
+	if nolimits {
+		return Quota{-1,-1,-1,-1,-1,-1}
+
+	}
+	kbytes, _ := strconv.Atoi(strings.Trim(sf[1], "*"))
+    kbsoft, _ := strconv.Atoi(sf[2])
+    kbhard, _ := strconv.Atoi(sf[3])
+    q.bytes = kbytes * 1024
+    q.bsoft = kbsoft * 1024
+    q.bhard = kbhard * 1024
+
+    q.files, _ = strconv.Atoi(strings.Trim(sf[4], "*"))
+    q.fsoft, _ = strconv.Atoi(sf[5])
+    q.fhard, _ = strconv.Atoi(sf[6])
+
+	return q
+}
+
 func utilizationBar(q *Quota) {
 	// get some terminal info to make rad status bars
 	w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
@@ -149,9 +196,11 @@ func main() {
 
 	cephPathPtr := flag.String("c", "", "Path for CephFS filesystem NOT including username")
 	pathPtr := flag.String("n", "", "Path for XFS or NFS filesystem NOT including username")
+    extPtr := flag.String("e", "", "Path for EXT filesystem")
+		
 	flag.Parse()
 
-	if (*cephPathPtr == "") && (*pathPtr == "") {
+	if (*cephPathPtr == "") && (*pathPtr == "") && (*extPtr == ""){
 		fmt.Println("Usage: ")
 		flag.PrintDefaults()
 		os.Exit(1)
@@ -168,5 +217,11 @@ func main() {
 
 		fmt.Printf("%-10s: ", *pathPtr)
 		utilizationBar(&xq)
+	}
+	if *extPtr != "" {
+		eq := extQuota(username, *extPtr)
+		fmt.Printf("%-10s: ", *extPtr)
+		utilizationBar(&eq)
+
 	}
 }
