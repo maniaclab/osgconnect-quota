@@ -152,7 +152,7 @@ func extQuota(name string, path string) Quota{
 	return q
 }
 
-func utilizationBar(q *Quota) {
+func utilizationBar(q *Quota, email string) {
 	// get some terminal info to make rad status bars
 	w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
@@ -162,7 +162,7 @@ func utilizationBar(q *Quota) {
 
 	maxwidth := w / 4
 	if q.bytes == -1 || q.bsoft == -1 || q.bhard == -1 {
-		msg := "No quota information! Contact user-support@opensciencegrid.org"
+		msg := "No quota information! Contact " + email
 		fmt.Printf("[ %s", msg)
 		for i := 1; i <= (maxwidth - len(msg)); i++ {
 			fmt.Printf(" ")
@@ -196,8 +196,8 @@ func main() {
 
 	cephPathPtr := flag.String("c", "", "Path for CephFS filesystem NOT including username")
 	pathPtr := flag.String("n", "", "Path for XFS or NFS filesystem NOT including username")
-    extPtr := flag.String("e", "", "Path for EXT filesystem")
-		
+    	extPtr := flag.String("e", "", "Path for EXT filesystem")
+	email := flag.String("s", "user-support@opensciencegrid.org" , "Support Email");
 	flag.Parse()
 
 	if (*cephPathPtr == "") && (*pathPtr == "") && (*extPtr == ""){
@@ -210,18 +210,18 @@ func main() {
 		cq := cephQuota(username, *cephPathPtr)
 
 		fmt.Printf("%-10s: ", *cephPathPtr)
-		utilizationBar(&cq)
+		utilizationBar(&cq, email)
 	}
 	if *pathPtr != "" {
 		xq := xfsQuota(username, *pathPtr)
 
 		fmt.Printf("%-10s: ", *pathPtr)
-		utilizationBar(&xq)
+		utilizationBar(&xq, email)
 	}
 	if *extPtr != "" {
 		eq := extQuota(username, *extPtr)
 		fmt.Printf("%-10s: ", *extPtr)
-		utilizationBar(&eq)
+		utilizationBar(&eq, email)
 
 	}
 }
