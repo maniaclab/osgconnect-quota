@@ -108,9 +108,10 @@ func xfsQuota(name string, path string) Quota {
 
 func extQuota(name string, path string) Quota{
 	var q Quota 
-	out, _ := exec.Command("quota", "-v").Output()
-	newpath := strings.Replace(path, "/", "\\/", -1)
-	re := regexp.MustCompile( newpath + "\\s+([0-9]+\\s*){6}")
+
+	cmd := exec.Command("sudo", "repquota", path)
+	out, _ := cmd.Output()
+	re := regexp.MustCompile( name + "[\\s-]+([0-9]+\\s+){6}")
     sfs := re.FindString(string(out))	
 	sf := strings.Fields(sfs) 
 	if len(sf) < 7 {
@@ -210,18 +211,18 @@ func main() {
 		cq := cephQuota(username, *cephPathPtr)
 
 		fmt.Printf("%-10s: ", *cephPathPtr)
-		utilizationBar(&cq, email)
+		utilizationBar(&cq, *email)
 	}
 	if *pathPtr != "" {
 		xq := xfsQuota(username, *pathPtr)
 
 		fmt.Printf("%-10s: ", *pathPtr)
-		utilizationBar(&xq, email)
+		utilizationBar(&xq, *email)
 	}
 	if *extPtr != "" {
 		eq := extQuota(username, *extPtr)
 		fmt.Printf("%-10s: ", *extPtr)
-		utilizationBar(&eq, email)
+		utilizationBar(&eq, *email)
 
 	}
 }
