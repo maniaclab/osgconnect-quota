@@ -109,7 +109,7 @@ func xfsQuota(name string, path string) Quota {
 func extQuota(name string, path string) Quota{
 	var q Quota 
 
-	cmd := exec.Command("sudo", "repquota", path)
+	cmd := exec.Command("repquota", path)
 	out, _ := cmd.Output()
 	re := regexp.MustCompile( name + "[\\s-]+([0-9]+\\s+){6}")
     sfs := re.FindString(string(out))	
